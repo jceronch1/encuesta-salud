@@ -2,6 +2,16 @@
 
 Read OMR sheets fast and accurately using a scanner 🖨 or your phone 🤳.
 
+> **Aplicación web incluida en este checkout.** Esta versión añade una interfaz local para cargar por lotes el cuestionario de factores de riesgo psicosocial intralaboral Forma A, extraer sus marcas y guardar las respuestas normalizadas en MySQL. Consulte [WEB_APP.md](WEB_APP.md) para instalarla, ejecutarla y conocer el modelo de datos. El motor original de OMRChecker y su licencia MIT se conservan.
+
+## Arquitectura de la aplicación Encuesta Salud
+
+![Tecnologías usadas en Encuesta Salud](output/infografia-tecnologias-encuesta-salud.png)
+
+### Cómo funciona la visión OMR
+
+![Proceso de detección de marcas OMR](output/infografia-punto-5-vision-omr.png)
+
 ## What is OMR?
 
 OMR stands for Optical Mark Recognition, used to detect and interpret human-marked data on documents. OMR refers to the process of reading and evaluating OMR sheets, commonly used in exams, surveys, and other forms.

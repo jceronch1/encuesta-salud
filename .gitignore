@@ -11,4 +11,13 @@ outputs/*
 **/.DS_Store
 **/__pycache__
 venv/
+.venv/
 OMRChecker.wiki/
+
+# Web application runtime data and local configuration
+.env
+data/
+tmp/
+*.sqlite3
+htmlcov/
+.coverage

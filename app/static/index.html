@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Carga y captura local de cuestionarios de riesgo psicosocial Forma A." />
+    <title>Encuesta Salud · Captura OMR</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Inicio">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" role="img">
+              <path d="M8 7.5h19a5 5 0 0 1 5 5v20H13a5 5 0 0 1-5-5v-20Z" />
+              <path d="M14 15h12M14 21h8M14 27h11" />
+              <circle cx="29.5" cy="28.5" r="6.5" />
+              <path d="m27 28.5 1.7 1.7 3.5-4" />
+            </svg>
+          </span>
+          <span>
+            <strong>Encuesta Salud</strong>
+            <small>Captura OMR local</small>
+          </span>
+        </a>
+        <div class="topbar-actions">
+          <span class="connection-pill is-checking" id="connectionPill">
+            <span class="status-dot"></span>
+            <span id="connectionText">Comprobando MySQL</span>
+          </span>
+          <a class="button button-secondary button-small" href="/api/export.csv" id="exportButton">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" /></svg>
+            Exportar CSV
+          </a>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow">Cuestionario intralaboral · Forma A</span>
+            <h1>Convierte tus encuestas PDF en datos listos para revisar.</h1>
+            <p>
+              Sube un archivo o un lote completo. La aplicación identifica cada respuesta,
+              respeta las preguntas condicionales y guarda el resultado en tu MySQL local.
+            </p>
+            <div class="privacy-note">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12v10H6V10Zm6 4v2" /></svg>
+              <span><strong>Procesamiento local.</strong> Los documentos no salen de este equipo.</span>
+            </div>
+          </div>
+
+          <section class="upload-card" aria-labelledby="uploadTitle">
+            <div class="card-heading">
+              <div>
+                <span class="step-kicker">Nueva carga</span>
+                <h2 id="uploadTitle">Selecciona tus PDFs</h2>
+              </div>
+              <span class="format-badge">PDF · máx. 250</span>
+            </div>
+
+            <label class="dropzone" id="dropzone" for="fileInput">
+              <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple />
+              <span class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 32 32"><path d="M16 21V7m0 0-5 5m5-5 5 5M7 20v5h18v-5" /></svg>
+              </span>
+              <strong>Arrastra los archivos aquí</strong>
+              <span>o haz clic para buscarlos en tu equipo</span>
+            </label>
+
+            <div class="selection" id="selection" hidden>
+              <div class="selection-summary">
+                <span id="selectionCount">0 archivos</span>
+                <button type="button" class="text-button" id="clearSelection">Quitar todos</button>
+              </div>
+              <ul class="selected-files" id="selectedFiles"></ul>
+            </div>
+
+            <div class="upload-progress" id="uploadProgress" hidden>
+              <div class="progress-copy">
+                <span id="progressLabel">Guardando lote…</span>
+                <strong id="progressPercent">0%</strong>
+              </div>
+              <div class="progress-track"><span id="progressBar"></span></div>
+            </div>
+
+            <button class="button button-primary button-full" id="uploadButton" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 14v5h14v-5" /></svg>
+              Guardar y procesar encuestas
+            </button>
+            <p class="upload-help">Cada PDF debe corresponder a una persona. Los duplicados exactos se reconocen automáticamente.</p>
+          </section>
+        </section>
+
+        <section class="stats-grid" aria-label="Resumen de cargas">
+          <article class="stat-card stat-total">
+            <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7V3Zm7 0v5h5" /></svg></span>
+            <div><span>Total de PDFs</span><strong id="statTotal">—</strong></div>
+          </article>
+          <article class="stat-card stat-complete">
+            <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg></span>
+            <div><span>Completados</span><strong id="statCompleted">—</strong></div>
+          </article>
+          <article class="stat-card stat-review">
+            <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5m0 4h.01M4 20h16L12 4 4 20Z" /></svg></span>
+            <div><span>Por revisar</span><strong id="statReview">—</strong></div>
+          </article>
+          <article class="stat-card stat-pending">
+            <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" /></svg></span>
+            <div><span>En proceso</span><strong id="statPending">—</strong></div>
+          </article>
+        </section>
+
+        <section class="analytics-section" id="analyticsSection" aria-labelledby="analyticsTitle">
+          <div class="analytics-header">
+            <div>
+              <span class="step-kicker">Estadísticas descriptivas</span>
+              <h2 id="analyticsTitle">Respuestas por categoría</h2>
+              <p>Composición de las respuestas A–E según los dominios y dimensiones oficiales de la Forma A.</p>
+            </div>
+            <span class="analytics-summary" id="analyticsSummary">Cargando datos…</span>
+          </div>
+
+          <div class="analytics-loading" id="analyticsLoading">
+            <span class="spinner"></span> Preparando gráficas…
+          </div>
+
+          <div class="analytics-empty" id="analyticsEmpty" hidden>
+            <strong id="analyticsEmptyTitle">Aún no hay estadísticas</strong>
+            <p id="analyticsEmptyCopy">Las gráficas aparecerán cuando se procese la primera encuesta.</p>
+          </div>
+
+          <div class="analytics-content" id="analyticsContent" hidden>
+            <div class="analytics-grid">
+              <article class="chart-card" aria-labelledby="globalChartTitle">
+                <div class="chart-heading">
+                  <div>
+                    <h3 id="globalChartTitle">Distribución global</h3>
+                    <p id="globalChartSubtitle">Respuestas contestadas en todas las preguntas.</p>
+                  </div>
+                </div>
+                <div class="category-bars" id="categoryBars"></div>
+              </article>
+
+              <article class="chart-card" aria-labelledby="domainChartTitle">
+                <div class="chart-heading">
+                  <div>
+                    <h3 id="domainChartTitle">Composición por dominio</h3>
+                    <p>Cada barra compara solo las respuestas contestadas de ese dominio.</p>
+                  </div>
+                </div>
+                <div class="response-legend" id="responseLegend" aria-label="Leyenda de respuestas"></div>
+                <div class="stacked-chart" id="domainChart"></div>
+              </article>
+            </div>
+
+            <article class="chart-card dimension-card" aria-labelledby="dimensionChartTitle">
+              <div class="chart-heading dimension-heading">
+                <div>
+                  <h3 id="dimensionChartTitle">Detalle por dimensión</h3>
+                  <p>Selecciona un dominio para explorar sus dimensiones.</p>
+                </div>
+                <label class="domain-filter">
+                  <span>Dominio</span>
+                  <select id="dimensionDomainFilter" aria-controls="dimensionChart"></select>
+                </label>
+              </div>
+              <div class="stacked-chart dimension-chart" id="dimensionChart"></div>
+            </article>
+
+            <details class="analytics-data">
+              <summary>Ver datos de las gráficas</summary>
+              <div class="analytics-table-wrap">
+                <table class="analytics-data-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Grupo</th>
+                      <th scope="col">A</th>
+                      <th scope="col">B</th>
+                      <th scope="col">C</th>
+                      <th scope="col">D</th>
+                      <th scope="col">E</th>
+                      <th scope="col">Contestadas</th>
+                      <th scope="col">Por revisar</th>
+                      <th scope="col">No aplica</th>
+                      <th scope="col">Cobertura</th>
+                    </tr>
+                  </thead>
+                  <tbody id="analyticsTableBody"></tbody>
+                </table>
+              </div>
+            </details>
+
+            <div class="analytics-note">
+              <span aria-hidden="true">i</span>
+              <p>
+                <strong>Lectura descriptiva.</strong>
+                <span id="analyticsMethodology">Los porcentajes no representan un nivel de riesgo.</span>
+                Agrupación basada en el
+                <a id="analyticsSource" href="#" target="_blank" rel="noreferrer">manual oficial, Tabla 23</a>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="records-card" aria-labelledby="recordsTitle">
+          <div class="records-header">
+            <div>
+              <span class="step-kicker">Base de datos</span>
+              <h2 id="recordsTitle">Encuestas cargadas</h2>
+            </div>
+            <div class="records-tools">
+              <label class="search-box">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>
+                <span class="sr-only">Buscar por archivo o ID</span>
+                <input id="searchInput" type="search" placeholder="Buscar archivo o ID…" autocomplete="off" />
+              </label>
+              <button class="icon-button" id="refreshButton" type="button" aria-label="Actualizar lista" title="Actualizar">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.2 9a7 7 0 0 1 11.4-2.3L20 9M4 15l2.4 2.3A7 7 0 0 0 18 15" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Archivo</th>
+                  <th>ID respondiente</th>
+                  <th>Captura</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+            <div class="empty-state" id="emptyState" hidden>
+              <span><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h11l5 5v19H8V4Zm11 0v6h6M12 16h8M12 21h6" /></svg></span>
+              <strong id="emptyTitle">Aún no hay encuestas</strong>
+              <p id="emptyCopy">La primera carga aparecerá aquí con su estado y respuestas detectadas.</p>
+            </div>
+            <div class="table-loading" id="tableLoading"><span class="spinner"></span> Cargando registros…</div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>OMRChecker + verificación geométrica · Datos brutos, sin calificación clínica</span>
+        <a href="/api/docs" target="_blank" rel="noreferrer">Documentación API</a>
+      </footer>
+    </div>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+    <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+    <aside class="detail-drawer" id="detailDrawer" aria-hidden="true" aria-labelledby="drawerTitle">
+      <div class="drawer-header">
+        <div>
+          <span class="step-kicker">Detalle de captura</span>
+          <h2 id="drawerTitle">Encuesta</h2>
+        </div>
+        <button class="icon-button" id="closeDrawer" type="button" aria-label="Cerrar detalle">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div class="drawer-body" id="drawerBody"></div>
+    </aside>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
