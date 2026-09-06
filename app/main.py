@@ -1,17 +1,20 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import csv
 import hashlib
 import io
 import logging
 import re
+import secrets
 import uuid
 from collections.abc import AsyncIterator, Generator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -66,6 +69,11 @@ def _database_dependency() -> Generator[Session, None, None]:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if not settings.auth_username or not settings.auth_password:
+        raise RuntimeError(
+            "AUTH_USERNAME y AUTH_PASSWORD son obligatorios. Configurelos en .env "
+            "antes de iniciar el servidor: contiene datos de salud sensibles."
+        )
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     connected, _error = database_status()
     if connected:
@@ -84,6 +92,35 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+def _unauthorized(detail: str = "Credenciales invalidas") -> Response:
+    return Response(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content=detail,
+        headers={"WWW-Authenticate": 'Basic realm="Encuesta Salud"'},
+    )
+
+
+@app.middleware("http")
+async def require_basic_auth(request: Request, call_next):
+    header = request.headers.get("authorization", "")
+    scheme, _, encoded = header.partition(" ")
+    if scheme.lower() != "basic" or not encoded:
+        return _unauthorized()
+    try:
+        decoded = base64.b64decode(encoded, validate=True).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError):
+        return _unauthorized()
+    username, sep, password = decoded.partition(":")
+    if not sep:
+        return _unauthorized()
+    valid = secrets.compare_digest(username, settings.auth_username) and (
+        secrets.compare_digest(password, settings.auth_password)
+    )
+    if not valid:
+        return _unauthorized()
+    return await call_next(request)
 
 
 def _iso(value: datetime | None) -> str | None:

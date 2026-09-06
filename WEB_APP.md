@@ -33,6 +33,9 @@ Copy-Item .env.example .env
 ```
 
 Edite `.env` con la cuenta MySQL dedicada. No use `root` como cuenta de la aplicación.
+Defina también `AUTH_USERNAME` y `AUTH_PASSWORD`: son obligatorios, el servidor no
+arranca sin ellos. Protegen con HTTP Basic Auth toda la app (pantalla, API y
+`/api/docs`), porque los datos son psicosociales y sensibles.
 
 La base debe existir con `utf8mb4`. Para una instalación nueva, una cuenta administrativa puede crear las tablas una sola vez:
 
@@ -91,6 +94,7 @@ El control esperado es: ID `653118`, 4 páginas, 114 respuestas aplicables, clie
 ## Privacidad y operación
 
 - `.env`, `data/`, temporales y la base no se incluyen en Git.
+- Toda la app exige HTTP Basic Auth (`AUTH_USERNAME`/`AUTH_PASSWORD`); sin credenciales validas no se ve ni la pantalla ni la API.
 - El ID se almacena como texto para conservar ceros iniciales.
 - El servidor escucha en `127.0.0.1` por defecto.
 - Haga copias de seguridad coordinadas de MySQL y `data/uploads/`; los metadatos contienen la ruta del PDF.

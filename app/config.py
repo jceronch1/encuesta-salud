@@ -34,6 +34,8 @@ class Settings:
     max_file_size_bytes: int
     max_batch_files: int
     processing_workers: int
+    auth_username: str
+    auth_password: str
 
 
 @lru_cache(maxsize=1)
@@ -65,4 +67,6 @@ def get_settings() -> Settings:
         max_file_size_bytes=_positive_int("MAX_FILE_SIZE_MB", 50) * 1024 * 1024,
         max_batch_files=_positive_int("MAX_BATCH_FILES", 250),
         processing_workers=_positive_int("PROCESSING_WORKERS", 2),
+        auth_username=os.getenv("AUTH_USERNAME", "").strip(),
+        auth_password=os.getenv("AUTH_PASSWORD", ""),
     )
